@@ -5,6 +5,6 @@ COPY . /app
 WORKDIR app
 
 RUN R -e "renv::restore(lockfile='renv.lock')"
-EXPOSE 8000
-ENTRYPOINT ["R", "-e", "pr <- plumber::plumb('/app/plumber.R'); pr$run(host='0.0.0.0', port=8000)"]
+EXPOSE 8080
+ENTRYPOINT ["R", "-e", "pr <- plumber::plumb('/app/plumber.R'); pr$run(host='0.0.0.0', port=8080)"]
 
