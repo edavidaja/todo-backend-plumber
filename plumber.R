@@ -10,10 +10,6 @@ con <- dbConnect(
   password = Sys.getenv("DB_PASS")
   )
 
-
-  dbRemoveTable(con, "todos")
-  dbDisconnect(con)
-
 dbSendQuery(
   con,
   'CREATE TABLE todos (
@@ -139,3 +135,8 @@ function(req, res, id, title, order, completed) {
     get_todo(con)
   }
 }
+
+
+on.exit(
+  dbDisconnect(con)
+)
