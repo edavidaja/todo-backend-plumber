@@ -139,10 +139,9 @@ function(req, res, id, title, order, completed) {
   }
 
   if (method == "GET") {
-    get_todo(con)
+    get_todo(con, id)
   }
 }
-
 
 on.exit(
   dbDisconnect(con)
