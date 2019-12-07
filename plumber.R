@@ -29,11 +29,10 @@ create_table <- function(con) {
 
 
 create_todo <- function(con, title, order, completed = FALSE) {
-  rs <- dbSendQuery(con,
-    'INSERT INTO todos ("title", "order", "completed") VALUES ($1, $2, $3) ',
+  dbGetQuery(con,
+    'INSERT INTO todos ("title", "order", "completed") VALUES ($1, $2, $3) RETURNING *',
     params = list(title, order, completed)
   )
-  dbClearResult(rs)
 }
 
 get_todo <- function(con, id) {
