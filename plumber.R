@@ -1,5 +1,4 @@
 library(DBI)
-library(dotenv)
 library(zeallot)
 
 con <- dbConnect(

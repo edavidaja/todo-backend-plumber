@@ -93,13 +93,6 @@
       "Repository": "CRAN",
       "Hash": "ed4a691194af45374f99d2d700400240"
     },
-    "dotenv": {
-      "Package": "dotenv",
-      "Version": "1.0.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "190dd2276b47493f2cd61513872356be"
-    },
     "ellipsis": {
       "Package": "ellipsis",
       "Version": "0.3.0",

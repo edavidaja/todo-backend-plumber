@@ -7,3 +7,4 @@ renv/python/
 renv/staging/
 
 .env
+.Renviron
