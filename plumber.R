@@ -10,21 +10,27 @@ con <- dbConnect(
   password = Sys.getenv("DB_PASS")
   )
 
-dbSendQuery(
-  con,
-  'CREATE TABLE todos (
-  id SERIAL PRIMARY KEY,
-  title text,
-  completed boolean DEFAULT FALSE,
-  "order" integer
-  );'
-  )
+create_table <- function(con) {
+
+  rs <- dbSendQuery(
+    con,
+    'CREATE TABLE IF NOT EXISTS todos (
+    id SERIAL PRIMARY KEY,
+    title text,
+    completed boolean DEFAULT FALSE,
+    "order" integer
+    );'
+    )
+  dbClearResult(rs)
+}
+
 
 create_todo <- function(con, title, order, completed = FALSE) {
-  dbSendQuery(con,
+  rs <- dbSendQuery(con,
     'INSERT INTO todos ("title", "order", "completed") VALUES ($1, $2, $3) ',
     params = list(title, order, completed)
   )
+  dbClearResult(rs)
 }
 
 get_todo <- function(con, id) {
@@ -50,11 +56,12 @@ update_todo <- function(con, id, title = NULL, order = NULL, completed = NULL) {
   if (!is.null(order)) df[["order"]] == order
   if (!is.null(completed)) df[["completed"]] == completed
 
-  dbSendQuery(
+  rs <- dbSendQuery(
     con,
-  'UPDATE todos set "title"=$1, "order"=$2, completed=$3 WHERE id=4$ RETURNING *',
+  'UPDATE todos set "title"=$1, "order"=$2, completed=$3 WHERE id=$4 RETURNING *',
   params = list(title, order, completed, id)
   )
+  dbClearResult(rs)
 
   return(df)
 }
@@ -71,7 +78,7 @@ delete_todos <- function(con) {
   dbGetQuery(con, "DELETE FROM todos")
 }
 
-
+create_table(con)
 
 #' @filter cors
 cors <- function(req, res) {
