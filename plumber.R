@@ -1,5 +1,6 @@
 library(DBI)
 library(dotenv)
+library(zeallot)
 
 con <- dbConnect(
   RPostgres::Postgres(),
@@ -8,7 +9,9 @@ con <- dbConnect(
   port     = 5432,
   user     = Sys.getenv("DB_NAME"),
   password = Sys.getenv("DB_PASS")
-  )
+)
+
+`%||%` <- function(l, r) { if (is.null(l)) r else l }
 
 create_table <- function(con) {
 
@@ -46,24 +49,22 @@ get_todos <- function(con) {
 }
 
 update_todo <- function(con, id, title = NULL, order = NULL, completed = NULL) {
-  df <- dbGetQuery(
+  c(old_id, old_title, old_completed, old_order) %<-%
+  dbGetQuery(
     con,
     "SELECT * FROM todos WHERE id = $1",
     params = list(id)
   )
 
-  if (!is.null(title)) df[["title"]] == title
-  if (!is.null(order)) df[["order"]] == order
-  if (!is.null(completed)) df[["completed"]] == completed
+  new_title     <- title %||% old_title
+  new_completed <- completed %||% old_completed
+  new_order     <- order %||% old_order
 
-  rs <- dbSendQuery(
+  dbGetQuery(
     con,
-  'UPDATE todos set "title"=$1, "order"=$2, completed=$3 WHERE id=$4 RETURNING *',
-  params = list(title, order, completed, id)
-  )
-  dbClearResult(rs)
-
-  return(df)
+    'UPDATE todos set "title"=$1, "order"=$2, completed=$3 WHERE id=$4 RETURNING *',
+    params = list(new_title, new_order, new_completed, id)
+    )
 }
 
 delete_todo <- function(con, id) {
