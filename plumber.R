@@ -2,22 +2,12 @@ library(DBI)
 library(zeallot)
 library(pool)
 
-con <-
-  dbPool(
-    drv      = RPostgres::Postgres(),
-    dbname   = Sys.getenv("DB_NAME"),
-    host     = Sys.getenv("DB_HOST"),
-    port     = 5432,
-    user     = Sys.getenv("DB_NAME"),
-    password = Sys.getenv("DB_PASS")
-  )
-
 `%||%` <- function(l, r) { if (is.null(l)) r else l }
 
 create_table <- function(con) {
-
+  pool <- poolCheckout(con)
   rs <- dbSendQuery(
-    con,
+    pool,
     'CREATE TABLE IF NOT EXISTS todos (
     id SERIAL PRIMARY KEY,
     title text,
@@ -26,6 +16,7 @@ create_table <- function(con) {
     );'
     )
   dbClearResult(rs)
+  poolReturn(pool)
 }
 
 
@@ -76,7 +67,10 @@ delete_todo <- function(con, id) {
 }
 
 delete_todos <- function(con) {
-  dbGetQuery(con, "DELETE FROM todos")
+  pool <- poolCheckout(con)
+  rs <- dbSendQuery(pool, "DELETE FROM todos")
+  dbClearResult(rs)
+  poolReturn(pool)
 }
 
 create_table(con)
@@ -116,6 +110,7 @@ function(req, res, title, order, completed) {
   }
 
   if (method == "GET") {
+    res$status <- 200
     get_todos(con)
   }
 
@@ -143,7 +138,3 @@ function(req, res, id, title, order, completed) {
     get_todo(con, id)
   }
 }
-
-on.exit(
-  dbDisconnect(con)
-)
