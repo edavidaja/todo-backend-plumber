@@ -1,14 +1,16 @@
 library(DBI)
 library(zeallot)
+library(pool)
 
-con <- dbConnect(
-  RPostgres::Postgres(),
-  dbname   = Sys.getenv("DB_NAME"),
-  host     = Sys.getenv("DB_HOST"),
-  port     = 5432,
-  user     = Sys.getenv("DB_NAME"),
-  password = Sys.getenv("DB_PASS")
-)
+con <-
+  dbPool(
+    drv      = RPostgres::Postgres(),
+    dbname   = Sys.getenv("DB_NAME"),
+    host     = Sys.getenv("DB_HOST"),
+    port     = 5432,
+    user     = Sys.getenv("DB_NAME"),
+    password = Sys.getenv("DB_PASS")
+  )
 
 `%||%` <- function(l, r) { if (is.null(l)) r else l }
 
