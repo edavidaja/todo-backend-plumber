@@ -1,6 +1,7 @@
 library(DBI)
 library(zeallot)
 library(pool)
+library(jsonlite)
 
 `%||%` <- function(l, r) { if (is.null(l)) r else l }
 
@@ -12,7 +13,8 @@ create_table <- function(con) {
     id SERIAL PRIMARY KEY,
     title text,
     completed boolean DEFAULT FALSE,
-    "order" integer
+    "order" integer,
+    url text
     );'
     )
   dbClearResult(rs)
@@ -20,19 +22,30 @@ create_table <- function(con) {
 }
 
 
-create_todo <- function(con, title, order, completed = FALSE) {
-  dbGetQuery(con,
+create_todo <- function(con, req, title, order, completed = FALSE) {
+
+  df <- dbGetQuery(con,
     'INSERT INTO todos ("title", "order", "completed") VALUES ($1, $2, $3) RETURNING *',
     params = list(title, order, completed)
   )
+  url <- glue::glue("{req$rook.url_scheme}://{req$HTTP_HOST}/{df$id}")
+
+  out <- dbGetQuery(
+    con,
+    'UPDATE todos set "url"=$1 WHERE id=$2 RETURNING *',
+    params = list(url, df$id)
+    )
+
+  unbox(out)
 }
 
 get_todo <- function(con, id) {
-  dbGetQuery(
+  df <- dbGetQuery(
     con,
     "SELECT * FROM TODOS WHERE id = $1",
     params = list(id)
     )
+  unbox(df)
 }
 
 get_todos <- function(con) {
@@ -53,7 +66,7 @@ update_todo <- function(con, id, title = NULL, order = NULL, completed = NULL) {
 
   dbGetQuery(
     con,
-    'UPDATE todos set "title"=$1, "order"=$2, completed=$3 WHERE id=$4 RETURNING *',
+    'UPDATE todos set "title"=$1, "order"=$2, "completed"=$3 WHERE id=$4 RETURNING *',
     params = list(new_title, new_order, new_completed, id)
     )
 }
@@ -98,9 +111,9 @@ function(req, res, title, order, completed) {
   method <- req$REQUEST_METHOD
 
   if (method == "POST") {
-    create_todo(con, title, order, completed)
+    out <- create_todo(con, req, title, 1, FALSE)
     res$status <- 201
-    return()
+    return(out)
   }
 
   if (method == "DELETE") {
@@ -110,13 +123,14 @@ function(req, res, title, order, completed) {
   }
 
   if (method == "GET") {
+    out <- get_todos(con)
     res$status <- 200
-    get_todos(con)
+    return(out)
   }
 
-  msg <- "internal server error"
+  msg <- "something went wrong."
   res$status <- 500
-  list(error=jsonlite::unbox(msg))
+  list(error = unbox(msg))
 }
 
 
@@ -127,14 +141,21 @@ function(req, res, id, title, order, completed) {
   method <- req$REQUEST_METHOD
 
   if (method == "PATCH") {
-    update_todo(con, id)
+    return(update_todo(con, id, title = title, order = order, completed = completed))
   }
 
   if (method == "DELETE") {
-    delete_todo(con, id)
+    out <- delete_todo(con, id)
+    res$status <- 204
+    return(out)
   }
 
   if (method == "GET") {
-    get_todo(con, id)
+    return(get_todo(con, id))
+
   }
+
+  msg <- "something went wrong."
+  res$status <- 500
+  list(error = unbox(msg))
 }
