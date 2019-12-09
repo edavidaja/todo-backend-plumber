@@ -22,11 +22,13 @@ create_table <- function(con) {
 }
 
 
-create_todo <- function(con, req, title, order, completed = FALSE) {
+create_todo <- function(con, req, title, order = NULL, completed = FALSE) {
+
+  todo_order <- order %||% NA_integer_
 
   df <- dbGetQuery(con,
     'INSERT INTO todos ("title", "order", "completed") VALUES ($1, $2, $3) RETURNING *',
-    params = list(title, order, completed)
+    params = list(title, todo_order, completed)
   )
   url <- glue::glue("{req$rook.url_scheme}://{req$HTTP_HOST}/{df$id}")
 
@@ -40,12 +42,12 @@ create_todo <- function(con, req, title, order, completed = FALSE) {
 }
 
 get_todo <- function(con, id) {
-  df <- dbGetQuery(
+  out <- dbGetQuery(
     con,
     "SELECT * FROM TODOS WHERE id = $1",
     params = list(id)
     )
-  unbox(df)
+  unbox(out)
 }
 
 get_todos <- function(con) {
@@ -53,10 +55,10 @@ get_todos <- function(con) {
 }
 
 update_todo <- function(con, id, title = NULL, order = NULL, completed = NULL) {
-  c(old_id, old_title, old_completed, old_order) %<-%
+  c(old_title, old_completed, old_order) %<-%
   dbGetQuery(
     con,
-    "SELECT * FROM todos WHERE id = $1",
+    'SELECT title, completed, "order" FROM todos WHERE id = $1',
     params = list(id)
   )
 
@@ -64,11 +66,13 @@ update_todo <- function(con, id, title = NULL, order = NULL, completed = NULL) {
   new_completed <- completed %||% old_completed
   new_order     <- order %||% old_order
 
-  dbGetQuery(
+  out <- dbGetQuery(
     con,
     'UPDATE todos set "title"=$1, "order"=$2, "completed"=$3 WHERE id=$4 RETURNING *',
     params = list(new_title, new_order, new_completed, id)
     )
+
+  unbox(out)
 }
 
 delete_todo <- function(con, id) {
@@ -107,11 +111,11 @@ cors <- function(req, res) {
 #' @get /
 #' @post /
 #' @delete /
-function(req, res, title, order, completed) {
+function(req, res, title, order = NULL, completed) {
   method <- req$REQUEST_METHOD
 
   if (method == "POST") {
-    out <- create_todo(con, req, title, 1, FALSE)
+    out <- create_todo(con, req, title, order)
     res$status <- 201
     return(out)
   }
@@ -137,11 +141,11 @@ function(req, res, title, order, completed) {
 #' @get /<id:int>
 #' @patch /<id:int>
 #' @delete /<id:int>
-function(req, res, id, title, order, completed) {
+function(req, res, id, title = NULL, order = NULL, completed = NULL) {
   method <- req$REQUEST_METHOD
 
   if (method == "PATCH") {
-    return(update_todo(con, id, title = title, order = order, completed = completed))
+    return(update_todo(con, id, title, order, completed))
   }
 
   if (method == "DELETE") {
