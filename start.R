@@ -6,19 +6,16 @@ con <-
     drv      = RPostgres::Postgres(),
     dbname   = Sys.getenv("DB_NAME"),
     host     = Sys.getenv("DB_HOST"),
-    port     = 5432,
+    port     = Sys.getenv("DB_PORT"),
     user     = Sys.getenv("DB_NAME"),
-    password = Sys.getenv("DB_PASS"),
-    maxSize  = 5 # connection limit for elephantsql instance class
+    password = Sys.getenv("DB_PASS")
   )
 
-pr <- plumb("plumber.R")
-
-pr$registerHook("exit", function() {
-  poolClose(con)
-})
-
-pr$run(
-  host = "0.0.0.0",
-  port = as.numeric(Sys.getenv("PORT", 8080))
+plumb("plumber.R") |>
+  pr_hook("exit", function() {
+    poolClose(con)
+  }) |>
+  pr_run(
+    host = "0.0.0.0",
+    port = as.numeric(Sys.getenv("PORT", 8080))
   )
