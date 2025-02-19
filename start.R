@@ -1,15 +1,7 @@
 library(plumber)
 library(pool)
 
-con <-
-  dbPool(
-    drv      = RPostgres::Postgres(),
-    dbname   = Sys.getenv("DB_NAME"),
-    host     = Sys.getenv("DB_HOST"),
-    port     = Sys.getenv("DB_PORT"),
-    user     = Sys.getenv("DB_NAME"),
-    password = Sys.getenv("DB_PASS")
-  )
+con <- dbPool(drv = RPostgres::Postgres())
 
 plumb("plumber.R") |>
   pr_hook("exit", function() {
