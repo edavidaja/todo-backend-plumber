@@ -1,39 +1,17 @@
-# fly.toml file generated for todo-backend-plumber on 2021-10-31T09:17:08-04:00
+app = 'todo-backend-plumber'
+primary_region = 'iad'
 
-app = "todo-backend-plumber"
+[build]
 
-kill_signal = "SIGINT"
-kill_timeout = 5
-processes = []
-
-[env]
-
-[experimental]
-  allowed_public_ports = []
-  auto_rollback = true
-
-[[services]]
-  http_checks = []
+[http_service]
   internal_port = 8080
-  processes = ["app"]
-  protocol = "tcp"
-  script_checks = []
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
-  [services.concurrency]
-    hard_limit = 25
-    soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [[services.tcp_checks]]
-    grace_period = "1s"
-    interval = "15s"
-    restart_limit = 0
-    timeout = "2s"
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1
